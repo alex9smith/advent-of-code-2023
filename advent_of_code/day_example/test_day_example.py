@@ -1,4 +1,4 @@
-from day00 import fibonacci
+from day_example import fibonacci
 
 from pytest import raises
 
