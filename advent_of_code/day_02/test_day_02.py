@@ -1,4 +1,5 @@
 from day_02 import (
+    handful_power,
     parse_handfuls,
     Handful,
     Game,
@@ -62,3 +63,19 @@ def test_game_possible():
 
 def test_sum_possible_games():
     assert sum_possible_game_ids(PART_1_FIXTURE) == 8
+
+
+def test_game_minimum_handful():
+    game = Game(
+        1,
+        [
+            Handful(4, 3, 0),
+            Handful(1, 6, 2),
+            Handful(0, 0, 2),
+        ],
+    )
+    assert game.minimum_handful() == Handful(4, 6, 2)
+
+
+def test_handful_power():
+    assert handful_power(Handful(4, 6, 2)) == 48

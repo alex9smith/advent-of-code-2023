@@ -85,9 +85,22 @@ def sum_possible_game_ids(lines: List[Line]) -> int:
     return sum(g.id for g in games if g.is_possible())
 
 
+def handful_power(handful: Handful) -> int:
+    return handful.red * handful.blue * handful.green
+
+
+def sum_minimum_handful_powers(lines: List[Line]) -> int:
+    games = [parse_line(l) for l in lines]
+    minimum_handfuls = [g.minimum_handful() for g in games]
+    return sum(handful_power(h) for h in minimum_handfuls)
+
+
 if __name__ == "__main__":
     with open("./advent_of_code/day_02/day_02.txt", "r") as file:
         lines = [line.strip() for line in file.readlines()]
 
     print("part 1")
     print(sum_possible_game_ids(lines))
+
+    print("part 2")
+    print(sum_minimum_handful_powers(lines))
