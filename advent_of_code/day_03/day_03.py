@@ -1,127 +1,108 @@
-from typing import List, TypeVar
+from typing import List
 from dataclasses import dataclass
 
-T = TypeVar("T")
-type Schematic = List[str]
+
+type Row = List[str]
 
 
 @dataclass
-class ParseResult:
-    line_length: int
-    schematic: Schematic
-
-
-@dataclass
-class NumberPosition:
+class Position:
+    row: int
     start: int
     end: int
-    number: int
+
+    def position_above(self) -> "Position":
+        return Position(row=self.row - 1, start=self.start - 1, end=self.end + 1)
+
+    def position_below(self) -> "Position":
+        return Position(row=self.row + 1, start=self.start - 1, end=self.end + 1)
 
 
-def parse(raw: str) -> ParseResult:
-    lines = [line.replace("\n", "").strip() for line in raw.split("\n")]
-    return ParseResult(
-        schematic=[p for line in lines if line != "" for p in line],
-        line_length=len(lines[0]),
-    )
+def is_not_numeric_or_period(input: str) -> bool:
+    return not ((input.isnumeric()) or (input == "."))
 
 
-def safe_get_from_list(list: List[T], index: int) -> T | None:
-    if index < 0:
-        return None
-    try:
-        return list[index]
-    except IndexError:
-        return None
+@dataclass
+class Schematic:
+    rows: int
+    columns: int
+    data: List[Row]
 
+    @classmethod
+    def parse(cls, data: List[str]) -> "Schematic":
+        separated = [list(line) for line in data]
+        return Schematic(data=separated, rows=len(separated), columns=len(separated[0]))
 
-def not_number_or_period(check: str) -> bool:
-    return not (check.isnumeric() or check == ".")
+    def find_all_numbers(self) -> List[Position]:
+        in_number = False
+        numbers: List[Position] = []
+        for row_index, row in enumerate(self.data):
+            start = 0
+            for column_index, item in enumerate(row):
+                if item.isnumeric():
+                    if not in_number:
+                        # Found the start of a new number
+                        start = column_index
+                        in_number = True
 
+                elif in_number:
+                    # Found the end of a number
+                    numbers.append(Position(row_index, start, column_index - 1))
+                    in_number = False
 
-def number_next_to_symbol(
-    schematic: Schematic, position: NumberPosition, line_length: int
-) -> bool:
-    above = [
-        i
-        for i in range(position.start - 1 - line_length, position.end + 2 - line_length)
-    ]
-    below = [
-        i
-        for i in range(position.start - 1 + line_length, position.end + 2 + line_length)
-    ]
-    positions = (
-        [
-            position.start - 1,
-            position.end + 1,
+            # At the end of a row, if we're in a number then end it
+            if in_number:
+                numbers.append(Position(row_index, start, len(row)))
+                in_number = False
+
+        return numbers
+
+    def get_valid_values_for_position(self, position: Position) -> str:
+        if position.row < 0 or position.row > self.rows - 1:
+            return ""
+
+        start, end = position.start, position.end
+
+        return "".join(self.data[position.row][max(start, 0) : min(end + 1, self.rows)])
+
+    def is_position_part_number(self, position: Position) -> bool:
+        surrounding: List[Position] = [
+            # before
+            Position(position.row, position.start - 1, position.start - 1),
+            # after
+            Position(position.row, position.end + 1, position.end + 1),
         ]
-        + above
-        + below
-    )
+        if position.row == 0:
+            # on the first row
+            surrounding.append(position.position_below())
 
-    adjacent_items = [safe_get_from_list(schematic, position) for position in positions]
-    return any(not_number_or_period(item) for item in adjacent_items if item)
-
-
-def find_number_in_schematic(schematic: Schematic, start: int) -> NumberPosition | None:
-    index = start
-    continue_search = True
-    in_number = False
-    number_parts = []
-    number_start = 0
-    number_end = 0
-
-    while (index < len(schematic)) & continue_search:
-        item = schematic[index]
-        if item.isnumeric():
-            if not in_number:
-                number_start = index
-                in_number = True
-
-            number_parts.append(item)
-
-        elif in_number:
-            number_end = index - 1
-            continue_search = False
-
-        index = index + 1
-
-    if in_number:
-        return NumberPosition(
-            number_start, number_end, number=int("".join(number_parts))
-        )
-
-    else:
-        return None
-
-
-def sum_engine_part_numbers(schematic: ParseResult) -> int:
-    part_sum = 0
-    index = 0
-    continue_search = True
-
-    while continue_search:
-        position = find_number_in_schematic(schematic.schematic, index)
-        if position is not None:
-            if number_next_to_symbol(
-                schematic.schematic, position, schematic.line_length
-            ):
-                part_sum += position.number
-
-            index = position.end + 1
-
+        elif position.row == self.rows - 1:
+            # on the last row
+            surrounding.append(position.position_above())
         else:
-            continue_search = False
-            index += 1
+            # in the middle
+            surrounding.append(position.position_above())
+            surrounding.append(position.position_below())
 
-    return part_sum
+        values = "".join(self.get_valid_values_for_position(p) for p in surrounding)
+        return any([is_not_numeric_or_period(v) for v in values])
+
+
+def sum_part_numbers(schematic: Schematic) -> int:
+    numbers = schematic.find_all_numbers()
+    part_numbers = [
+        schematic.get_valid_values_for_position(p)
+        for p in numbers
+        if schematic.is_position_part_number(p)
+    ]
+    return sum([int(n) for n in part_numbers])
 
 
 if __name__ == "__main__":
     with open("./advent_of_code/day_03/day_03.txt", "r") as file:
-        raw = file.read()
+        lines = [line.strip() for line in file.readlines()]
 
-    parsed = parse(raw)
+    schematic = Schematic.parse(lines)
 
     print("part 1")
-    print(sum_engine_part_numbers(parsed))
+    print(sum_part_numbers(schematic))

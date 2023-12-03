@@ -1,88 +1,69 @@
-from day_03 import (
-    parse,
-    safe_get_from_list,
-    not_number_or_period,
-    number_next_to_symbol,
-    find_number_in_schematic,
-    sum_engine_part_numbers,
-    NumberPosition,
-)
+from typing import List
+from pytest import fixture
+from day_03 import Schematic, Position, is_not_numeric_or_period, sum_part_numbers
 
-PART_1_RAW = """467..114..\n
-...*......\n
-..35..633.\n
-......#...\n
-617*......\n
-.....+.58.\n
-..592.....\n
-......755.\n
-...$.*....\n
-.664.598.."""
+PART_1_RAW = [
+    "467..114..",
+    "...*......",
+    "..35..633.",
+    "......#...",
+    "617*......",
+    ".....+.58.",
+    "..592.....",
+    "......755.",
+    "...$.*....",
+    ".664.598..",
+]
 
 
-def test_parse():
-    parsed = parse(PART_1_RAW)
-    assert parsed.line_length == 10
-    assert parsed.schematic[0:11] == [
-        "4",
-        "6",
-        "7",
-        ".",
-        ".",
-        "1",
-        "1",
-        "4",
-        ".",
-        ".",
-        ".",
-    ]
+class TestSchematic:
+    @fixture
+    def schematic(self) -> Schematic:
+        return Schematic.parse([line.strip() for line in PART_1_RAW])
+
+    @fixture
+    def numbers(self, schematic: Schematic) -> List[Position]:
+        return schematic.find_all_numbers()
+
+    def test_parse(self, schematic):
+        assert schematic.rows == 10
+        assert schematic.columns == 10
+
+    def test_find_all_numbers(self, numbers: List[Position]):
+        assert numbers[0] == Position(0, 0, 2)
+        assert numbers[-1] == Position(9, 5, 7)
+
+    def test_get_valid_values_for_position(
+        self, schematic: Schematic, numbers: List[Position]
+    ):
+        assert schematic.get_valid_values_for_position(numbers[0]) == "467"
+        assert schematic.get_valid_values_for_position(numbers[1]) == "114"
+        assert schematic.get_valid_values_for_position(numbers[-1]) == "598"
+
+        assert schematic.get_valid_values_for_position(Position(0, -1, 2)) == "467"
+        assert schematic.get_valid_values_for_position(Position(0, 5, 200)) == "114.."
+
+        assert schematic.get_valid_values_for_position(Position(-1, 0, 2)) == ""
+        assert (
+            schematic.get_valid_values_for_position(Position(schematic.rows + 1, 0, 2))
+            == ""
+        )
+
+    def test_is_position_part_number(
+        self, schematic: Schematic, numbers: List[Position]
+    ):
+        assert schematic.is_position_part_number(numbers[-1])
+        assert not schematic.is_position_part_number(numbers[1])
+        assert schematic.is_position_part_number(numbers[0])
 
 
-def test_safe_get_from_list():
-    LIST = [i for i in range(10)]
-    assert safe_get_from_list(LIST, 0) == 0
-    assert safe_get_from_list(LIST, 5) == 5
-    assert safe_get_from_list(LIST, 20) == None
-    assert safe_get_from_list(LIST, -1) == None
+def test_is_not_numeric_or_period():
+    assert not is_not_numeric_or_period(".")
+    assert not is_not_numeric_or_period("9")
+    assert is_not_numeric_or_period("+")
+    assert not any([is_not_numeric_or_period(v) for v in "......."])
 
 
-def test_not_number_or_period():
-    assert not not_number_or_period(".")
-    assert not not_number_or_period("5")
-    assert not_number_or_period("a")
-    assert not_number_or_period("+")
-
-
-def test_number_next_to_symbol():
-    parsed = parse(PART_1_RAW)
-
-    assert number_next_to_symbol(
-        parsed.schematic, NumberPosition(0, 2, 1), parsed.line_length
-    )
-    assert not number_next_to_symbol(
-        parsed.schematic, NumberPosition(5, 7, 1), parsed.line_length
-    )
-
-
-def test_find_number_in_schematic():
-    parsed = parse(PART_1_RAW)
-    result = find_number_in_schematic(parsed.schematic, 0)
-    assert result is not None
-    assert result.start == 0
-    assert result.end == 2
-    assert result.number == 467
-
-    result = find_number_in_schematic(parsed.schematic, 99)
-    assert result is None
-
-
-def test_sum_engine_part_numbers():
-    parsed = parse(PART_1_RAW)
-    assert sum_engine_part_numbers(parsed) == 4361
-
-    parsed = parse(
-        """123..456\n
-    .....*..
-    """
-    )
-    assert sum_engine_part_numbers(parsed) == 456
+def test_sum_part_numbers():
+    schematic = Schematic.parse([line.strip() for line in PART_1_RAW])
+    assert sum_part_numbers(schematic) == 4361
