@@ -1,6 +1,12 @@
 from typing import List
 from pytest import fixture
-from day_03 import Schematic, Position, is_not_numeric_or_period, sum_part_numbers
+from day_03 import (
+    Schematic,
+    Position,
+    is_not_numeric_or_period,
+    sum_part_numbers,
+    sum_gear_ratios,
+)
 
 PART_1_RAW = [
     "467..114..",
@@ -14,6 +20,21 @@ PART_1_RAW = [
     "...$.*....",
     ".664.598..",
 ]
+
+
+class TestPosition:
+    def test_contains(self):
+        base = Position(1, 1, 5)
+
+        test_cases = [
+            (Position(1, 2, 3), True),
+            (Position(1, 2, 6), False),
+            (Position(2, 2, 3), False),
+            (Position(1, 0, 3), False),
+        ]
+
+        for case in test_cases:
+            assert base.contains(case[0]) == case[1]
 
 
 class TestSchematic:
@@ -56,6 +77,11 @@ class TestSchematic:
         assert not schematic.is_position_part_number(numbers[1])
         assert schematic.is_position_part_number(numbers[0])
 
+    def test_find_all_gears(self, schematic: Schematic):
+        gears = schematic.find_all_gears()
+        assert len(gears) == 3
+        assert gears[0] == Position(1, 3, 3)
+
 
 def test_is_not_numeric_or_period():
     assert not is_not_numeric_or_period(".")
@@ -67,3 +93,8 @@ def test_is_not_numeric_or_period():
 def test_sum_part_numbers():
     schematic = Schematic.parse([line.strip() for line in PART_1_RAW])
     assert sum_part_numbers(schematic) == 4361
+
+
+def test_sum_gear_ratios():
+    schematic = Schematic.parse([line.strip() for line in PART_1_RAW])
+    assert sum_gear_ratios(schematic) == 467835
