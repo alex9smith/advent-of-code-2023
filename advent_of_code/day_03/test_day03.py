@@ -79,3 +79,10 @@ def test_find_number_in_schematic():
 def test_sum_engine_part_numbers():
     parsed = parse(PART_1_RAW)
     assert sum_engine_part_numbers(parsed) == 4361
+
+    parsed = parse(
+        """123..456\n
+    .....*..
+    """
+    )
+    assert sum_engine_part_numbers(parsed) == 456

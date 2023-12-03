@@ -19,9 +19,10 @@ class NumberPosition:
 
 
 def parse(raw: str) -> ParseResult:
-    lines = [line.replace("\n", "") for line in raw.split("\n")]
+    lines = [line.replace("\n", "").strip() for line in raw.split("\n")]
     return ParseResult(
-        schematic=[p for line in lines for p in line], line_length=len(lines[0])
+        schematic=[p for line in lines if line != "" for p in line],
+        line_length=len(lines[0]),
     )
 
 
