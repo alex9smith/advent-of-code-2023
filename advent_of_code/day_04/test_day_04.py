@@ -1,5 +1,5 @@
 from pytest import fixture
-from day_04 import Card, sum_card_scores
+from day_04 import Card, sum_card_scores, count_matched_copied_cards
 
 FIXTURE = [
     "Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53",
@@ -33,3 +33,8 @@ class TestCard:
 
 def test_sum_card_scores():
     assert sum_card_scores(FIXTURE) == 13
+
+
+def test_count_matched_copied_cards():
+    cards = [Card.from_line(line) for line in FIXTURE]
+    assert count_matched_copied_cards(cards) == 30
