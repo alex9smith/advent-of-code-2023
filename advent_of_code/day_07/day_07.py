@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 from collections import Counter
-from enum import Enum
+from enum import Enum, IntEnum
 from typing import List
 
 
-class Card(Enum):
+class Card(IntEnum):
     JOKER = 1
     TWO = 2
     THREE = 3
@@ -19,9 +19,6 @@ class Card(Enum):
     QUEEN = 12
     KING = 13
     ACE = 14
-
-    def __lt__(self, other: "Card") -> bool:
-        return self.value < other.value
 
     @classmethod
     def from_char(cls, char: str) -> "Card":
@@ -56,7 +53,7 @@ class Card(Enum):
                 raise ValueError(f"Couldn't parse char {char}")
 
 
-class Type(Enum):
+class Type(IntEnum):
     HIGH_CARD = 1
     PAIR = 2
     TWO_PAIR = 3
@@ -64,9 +61,6 @@ class Type(Enum):
     FULL_HOUSE = 5
     FOUR_OF_A_KIND = 6
     FIVE_OF_A_KIND = 7
-
-    def __lt__(self, other: "Type") -> bool:
-        return self.value < other.value
 
 
 @dataclass(frozen=True)
