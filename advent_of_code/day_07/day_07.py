@@ -5,6 +5,7 @@ from typing import List
 
 
 class Card(Enum):
+    JOKER = 1
     TWO = 2
     THREE = 3
     FOUR = 4
@@ -43,14 +44,14 @@ class Card(Enum):
                 return Card.NINE
             case "T":
                 return Card.TEN
-            case "J":
-                return Card.JACK
             case "Q":
                 return Card.QUEEN
             case "K":
                 return Card.KING
             case "A":
                 return Card.ACE
+            case "J":
+                return Card.JOKER
             case _:
                 raise ValueError(f"Couldn't parse char {char}")
 
@@ -68,7 +69,7 @@ class Type(Enum):
         return self.value < other.value
 
 
-@dataclass
+@dataclass(frozen=True)
 class CardCount:
     card: Card
     count: int
@@ -88,25 +89,71 @@ class Hand:
 
     @property
     def most_common(self) -> CardCount:
-        most_common = self.card_counts.most_common(1)[0]
-        return CardCount(most_common[0], most_common[1])
+        highest_count = max(self.card_counts.values())
+        cards_with_highest_count = []
+
+        for card, count in self.card_counts.items():
+            if count == highest_count:
+                cards_with_highest_count.append(card)
+
+        return CardCount(card=max(cards_with_highest_count), count=highest_count)
+
+    @property
+    def most_common_high_card_not_joker(self) -> CardCount:
+        if not self.most_common.card == Card.JOKER:
+            # If it's already not a Joker
+            return self.most_common
+
+        elif self.most_common.count == 5:
+            # If it's all jokers
+            return self.most_common
+        else:
+            not_jokers = [card for card in self.cards if not card == Card.JOKER]
+            not_jokers_count = Counter(not_jokers)
+
+            highest_count = max(not_jokers_count.values())
+            cards_with_highest_count = []
+
+            for card, count in not_jokers_count.items():
+                if count == highest_count:
+                    cards_with_highest_count.append(card)
+
+            return CardCount(card=max(cards_with_highest_count), count=highest_count)
 
     @property
     def type(self) -> Type:
-        match len(self.card_counts):
+        cards_joker_replaced: List[Card] = []
+        for card in self.cards:
+            if card == Card.JOKER:
+                cards_joker_replaced.append(self.most_common_high_card_not_joker.card)
+            else:
+                cards_joker_replaced.append(card)
+
+        counts_cards_joker_replaced = Counter(cards_joker_replaced)
+        match len(counts_cards_joker_replaced):
             case 1:
                 return Type.FIVE_OF_A_KIND
 
             case 2:
                 # Either 4 of a kind or full house
-                if self.most_common.count == 4:
+                if (
+                    counts_cards_joker_replaced.get(
+                        self.most_common_high_card_not_joker.card
+                    )
+                    == 4
+                ):
                     return Type.FOUR_OF_A_KIND
                 else:
                     return Type.FULL_HOUSE
 
             case 3:
                 # Either 3 of a kind or two pairs
-                if self.most_common.count == 3:
+                if (
+                    counts_cards_joker_replaced.get(
+                        self.most_common_high_card_not_joker.card
+                    )
+                    == 3
+                ):
                     return Type.THREE_OF_A_KIND
                 else:
                     return Type.TWO_PAIR
@@ -159,5 +206,5 @@ if __name__ == "__main__":
         ]
 
     game = [Hand.from_line(line) for line in lines]
-    print("part 1")
+    print("part 2")
     print(total_winnings(game))
